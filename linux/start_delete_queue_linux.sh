@@ -17,7 +17,7 @@ do
   /usr/local/bin/aws sqs list-queues --next-token $(cat token.txt) --max-results 1000  > queue_list.json
   jq -r '.QueueUrls[]' queue_list.json >> queue_url.txt
 done
-sed 's|https://sqs.us-west-2.amazonaws.com/<account-number>/||g' queue_url.txt |sed 's|.*-DL||g'|sed '/^$/d' > queue_name.txt
+sed 's|https://sqs.us-west-2.amazonaws.com/652029311869/||g' queue_url.txt |sed 's|.*-DL||g'|sed '/^$/d' > queue_name.txt
 
 echo "Start filtering queue not received message"
 for i in $(cat queue_name.txt|xargs)
@@ -39,10 +39,15 @@ done
 echo "Start getting queue URL for delete"
 for i in $(cat queue_O.txt|xargs)
 do
-  echo "https://sqs.us-west-2.amazonaws.com/<account-number>/$i" >> queue_for_delete.txt
+  echo "https://sqs.us-west-2.amazonaws.com/652029311869/$i" >> queue_for_delete.txt
   if [ $(grep "$i-DL" queue_url.txt|wc -l) -gt 0 ]
   then
     grep "$i-DL" queue_url.txt >> dlq.txt
   fi
 done
 sort dlq.txt |uniq -u >> queue_for_delete.txt
+
+for i in $(cat queue_for_delete.txt|xargs)
+do
+  aws sqs delete-queue --queue-url $i
+done
